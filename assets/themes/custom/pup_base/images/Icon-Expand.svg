@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="12px" height="12px" viewBox="0 0 12 12" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 57.1 (83088) - https://sketch.com -->
+    <title>Icon-Expand</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <path d="M14,8.99479167 L14,7.00520833 C14,6.65885417 13.7133929,6.38020833 13.3571429,6.38020833 L9.66607143,6.38020833 L9.66607143,2.79166667 C9.66607143,2.4453125 9.37946429,2.16666667 9.02321429,2.16666667 L6.97678571,2.16666667 C6.62053571,2.16666667 6.33392857,2.4453125 6.33392857,2.79166667 L6.33392857,6.38020833 L2.64285714,6.38020833 C2.28660714,6.38020833 2,6.65885417 2,7.00520833 L2,8.99479167 C2,9.34114583 2.28660714,9.61979167 2.64285714,9.61979167 L6.33392857,9.61979167 L6.33392857,13.2083333 C6.33392857,13.5546875 6.62053571,13.8333333 6.97678571,13.8333333 L9.02321429,13.8333333 C9.37946429,13.8333333 9.66607143,13.5546875 9.66607143,13.2083333 L9.66607143,9.61979167 L13.3571429,9.61979167 C13.7133929,9.61979167 14,9.34114583 14,8.99479167 Z" id="path-1"></path>
+    </defs>
+    <g id="Specs" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Mobile-Header-Specs" transform="translate(-1838.000000, -610.000000)">
+            <g id="Mobile-Main-Nav-Specs" transform="translate(1555.000000, 593.000000)">
+                <g id="File">
+                    <g id="forms-/-plus-solid" transform="translate(281.000000, 15.000000)">
+                        <mask id="mask-2" fill="white">
+                            <use xlink:href="#path-1"></use>
+                        </mask>
+                        <use id="plus-solid" fill="#000000" fill-rule="nonzero" xlink:href="#path-1"></use>
+                        <g id="color-white" mask="url(#mask-2)" fill="#FFFFFF" fill-rule="evenodd">
+                            <rect id="color-/-white" x="0" y="0" width="16" height="16"></rect>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
