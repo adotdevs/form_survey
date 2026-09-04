@@ -239,7 +239,7 @@ export default function IdentificationFlow() {
 
           <div style={{ marginBottom: '28px' }}>
             <label htmlFor="email_input" style={{ display: 'block', fontSize: '16px', fontWeight: 700, color: '#112e51', marginBottom: '10px' }}>
-              Email Address <span style={{ fontWeight: 400, color: '#565c65', fontSize: '14px' }}>(optional)</span>
+              Email Address
             </label>
             <input
               type="email"
