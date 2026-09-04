@@ -1,6 +1,5 @@
 import React from 'react';
-import fs from 'fs';
-import path from 'path';
+import { headerHtml, footerHtml, articleHtml as rawArticleHtml } from './irs/irsContent';
 
 interface IrsShellProps {
   children?: React.ReactNode;
@@ -8,20 +7,7 @@ interface IrsShellProps {
 }
 
 export default function IrsShell({ children, showHomeArticle = false }: IrsShellProps) {
-  const headerHtml = fs.readFileSync(
-    path.join(process.cwd(), 'components/irs/header.html'),
-    'utf-8'
-  );
-  const footerHtml = fs.readFileSync(
-    path.join(process.cwd(), 'components/irs/footer.html'),
-    'utf-8'
-  );
-  const articleHtml = showHomeArticle
-    ? fs.readFileSync(
-        path.join(process.cwd(), 'components/irs/article.html'),
-        'utf-8'
-      )
-    : '';
+  const articleHtml = showHomeArticle ? rawArticleHtml : '';
 
   return (
     <>
